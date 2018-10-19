@@ -6,7 +6,7 @@ from scrapy.loader import ItemLoader
 from physio.items import PhysioItem
 
 URI = "https://www.physiotherapy.asn.au/APAWCM/Controls/FindaPhysio.aspx"
-POSTCODE = ['2000']
+POSTCODE = ['2000', '2600']
 # POSTCODE = ['2000','2600','3000','4000','5000','6000','7000','8000']
 RADIUS = '1'
 ID_POSTCODE = 'ctl00_TemplateBody_WebPartManager1_gwpste_container_FindaPhysioIPart_ciFindaPhysioIPart_FP1_fpSearch_txtPostCode'
@@ -71,16 +71,14 @@ def start_repo(postcode):
 class CrawlSpider(scrapy.Spider):
     name = 'crawl'
     start_urls = ["https://www.physiotherapy.asn.au"]
-    postcode = ''
 
     def parse(self, response):
         print 'vaoday'
         for code in POSTCODE:
-            self.postcode = code
             urls = start_repo(code)
 
             for url in urls:
-                yield scrapy.Request(url, callback=self.get_details)
+                yield scrapy.Request(url+'&code={}'.format(code), callback=self.get_details, meta=dict(postcode=code))
 
     def get_details(self, response):
         print 'vaoday      111111111111111'
@@ -91,7 +89,7 @@ class CrawlSpider(scrapy.Spider):
         fax = ''
         email = ''
         web_url = ''
-        postcode_searched = self.postcode
+        postcode_searched = response.meta['postcode']
 
         top_left = response.xpath('//*[@id="topLeft"]')
         td_bolded_once = top_left.xpath('.//table').xpath('.//td')
@@ -152,5 +150,5 @@ class CrawlSpider(scrapy.Spider):
         l.add_value('email', email.replace('mailto: ', '', 1))
         l.add_value('web_url', web_url)
         l.add_value('profile_url', profile_url)
-        # l.add_value('postcode_searched', postcode_searched)
+        l.add_value('postcode_searched', postcode_searched)
         return l.load_item()
