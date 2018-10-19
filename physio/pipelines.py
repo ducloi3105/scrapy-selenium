@@ -8,4 +8,8 @@
 
 class PhysioPipeline(object):
     def process_item(self, item, spider):
+        if item.get('phone', ''):
+            item['phone'] = item['phone'][0]
+        if item.get('fax', ''):
+            item['fax'] = item['fax'][0]
         return item
