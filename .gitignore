@@ -104,3 +104,4 @@ wsgi.ini*
 # vim swap files
 *.swp
 *.swo
+item.csv

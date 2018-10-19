@@ -10,5 +10,12 @@ import scrapy
 
 class PhysioItem(scrapy.Item):
     # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+    practitioner_name = scrapy.Field()
+    practise_name = scrapy.Field()
+    address = scrapy.Field()
+    phone = scrapy.Field()
+    fax = scrapy.Field()
+    email = scrapy.Field()
+    web_url = scrapy.Field()
+    profile_url = scrapy.Field()
+    postcode_searched = scrapy.Field()

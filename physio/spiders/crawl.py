@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
-
-from selenium import webdriver
 import time
+from selenium import webdriver
+from scrapy.loader import ItemLoader
+from physio.items import PhysioItem
 
 URI = "https://www.physiotherapy.asn.au/APAWCM/Controls/FindaPhysio.aspx"
 POSTCODE = '2000'
@@ -33,7 +34,7 @@ def get_links(driver):
 
 
 def start_repo():
-    driver = webdriver.Firefox()
+    driver = webdriver.Chrome()
     driver.get(URI)
 
     # search by postcode and radius
@@ -68,9 +69,77 @@ def start_repo():
 
 class CrawlSpider(scrapy.Spider):
     name = 'crawl'
-    # allowed_domains = start_repo()
-    start_urls = ['https://www.physiotherapy.asn.au/APAWCM/Global_Navigation/FP_ContactDetails/APAWCM/Controls/ContactDetails.aspx?id=52312']
+    start_urls = start_repo()
+    # start_urls = ['https://www.physiotherapy.asn.au/APAWCM/Global_Navigation/FP_ContactDetails/APAWCM/Controls/ContactDetails.aspx?id=52312']
 
     def parse(self, response):
-        print 11111111111111111111111111111
-        print response
+        practitioner_name = ''
+        practise_name = ''
+        address = ''
+        phone = ''
+        fax = ''
+        email = ''
+        web_url = ''
+        postcode_searched = ''
+
+        top_left = response.xpath('//*[@id="topLeft"]')
+        td_bolded_once = top_left.xpath('.//table').xpath('.//td')
+        bolded_once = td_bolded_once[0].xpath('text()').extract_first()
+        if bolded_once == "Practitioner Name":
+            practitioner_name = td_bolded_once[1].xpath('text()').extract_first()
+
+        table_contact = top_left.xpath('.//*[@id="ctl00_TemplateBody_WebPartManager1_gwpste_container_ContactDetails_ciContactDetails_ContactDetailsControl1_contactDetailsList_gridCD"]')
+        td_bolded_two = table_contact[0].xpath('.//table').xpath('.//td')
+        get_name = get_add = get_phone = get_fax = get_email = get_web = False
+        for td in td_bolded_two:
+            txt = td.xpath('text()').extract_first()
+            if txt == "Practice Name":
+                get_add = get_phone = get_fax = get_email = get_web = False
+                get_name = True
+                continue
+            if txt == "Address":
+                get_name = get_phone = get_fax = get_email = get_web = False
+                get_add = True
+                continue
+            if txt == "Phone":
+                get_name = get_add = get_fax = get_email = get_web = False
+                get_phone = True
+                continue
+            if txt == "Fax":
+                get_name = get_add = get_phone = get_email = get_web = False
+                get_fax = True
+                continue
+            if txt == "Email":
+                get_name = get_add = get_phone = get_fax = get_web = False
+                get_email = True
+                continue
+            if txt == "Web":
+                get_name = get_add = get_phone = get_fax = get_email = False
+                get_web = True
+                continue
+            if get_name:
+                practise_name = txt
+            if get_add:
+                address = txt
+            if get_phone:
+                phone = txt
+            if get_fax:
+                fax = txt
+            if get_email:
+                email = td.xpath('.//a/@href').extract_first()
+            if get_web:
+                web_url = td.xpath('.//a/@href').extract_first()
+                break
+
+        profile_url = response.request.url
+        l = ItemLoader(item=PhysioItem(), response=response)
+        l.add_value('practitioner_name', practitioner_name)
+        l.add_value('practise_name', practise_name)
+        l.add_value('address', address)
+        l.add_value('phone', phone)
+        l.add_value('fax', fax)
+        l.add_value('email', email.replace('mailto: ', '', 1))
+        l.add_value('web_url', web_url)
+        l.add_value('profile_url', profile_url)
+        l.add_value('postcode_searched', postcode_searched)
+        return l.load_item()
