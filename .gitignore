@@ -105,3 +105,4 @@ wsgi.ini*
 *.swp
 *.swo
 item.csv
+venv/

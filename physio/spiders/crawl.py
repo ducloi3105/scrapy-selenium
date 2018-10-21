@@ -4,11 +4,19 @@ import time
 from selenium import webdriver
 from scrapy.loader import ItemLoader
 from physio.items import PhysioItem
+from selenium.webdriver.firefox.options import Options
+import logging
+
+logger = logging.getLogger(__name__)
+fh = logging.FileHandler('error.log')
+fh.setLevel(logging.ERROR)
+logger.addHandler(fh)
+
 
 URI = "https://www.physiotherapy.asn.au/APAWCM/Controls/FindaPhysio.aspx"
-POSTCODE = ['2000', '2600']
+POSTCODE = ['2000']
 # POSTCODE = ['2000','2600','3000','4000','5000','6000','7000','8000']
-RADIUS = '1'
+RADIUS = '999'
 ID_POSTCODE = 'ctl00_TemplateBody_WebPartManager1_gwpste_container_FindaPhysioIPart_ciFindaPhysioIPart_FP1_fpSearch_txtPostCode'
 ID_RADIUS = 'ctl00_TemplateBody_WebPartManager1_gwpste_container_FindaPhysioIPart_ciFindaPhysioIPart_FP1_fpSearch_txtRadius'
 BTN_SUBMIT = '.FPSearchButton input[type="submit"].TextButtonAPA'
@@ -28,14 +36,17 @@ def get_links(driver):
         try:
             xpath = '//table//tr[{i}]/td[2]/a'.format(i=i)
             links.append(driver.find_element_by_xpath(xpath).get_attribute('href'))
-        except:
+        except Exception as e:
+            logger.error(e)
             break
         i += 1
     return links
 
 
 def start_repo(postcode):
-    driver = webdriver.Chrome()
+    options = Options()
+    options.add_argument("--headless")
+    driver = webdriver.Firefox(firefox_options=options)
     driver.get(URI)
 
     # search by postcode and radius
@@ -62,9 +73,7 @@ def start_repo(postcode):
             links += get_links(driver)
         except:
             break
-    print len(links)
     driver.close()
-
     return links
 
 
@@ -73,7 +82,6 @@ class CrawlSpider(scrapy.Spider):
     start_urls = ["https://www.physiotherapy.asn.au"]
 
     def parse(self, response):
-        print 'vaoday'
         for code in POSTCODE:
             urls = start_repo(code)
 
@@ -81,7 +89,6 @@ class CrawlSpider(scrapy.Spider):
                 yield scrapy.Request(url+'&code={}'.format(code), callback=self.get_details, meta=dict(postcode=code))
 
     def get_details(self, response):
-        print 'vaoday      111111111111111'
         practitioner_name = ''
         practise_name = ''
         address = ''
