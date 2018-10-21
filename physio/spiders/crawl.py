@@ -81,12 +81,25 @@ class CrawlSpider(scrapy.Spider):
     name = 'crawl'
     start_urls = ["https://www.physiotherapy.asn.au"]
 
-    def parse(self, response):
-        for code in POSTCODE:
-            urls = start_repo(code)
+    def strip_txt(self, txt):
+        try:
+            return txt.strip()
+        except:
+            pass
+        return txt
 
-            for url in urls:
-                yield scrapy.Request(url+'&code={}'.format(code), callback=self.get_details, meta=dict(postcode=code))
+    def parse(self, response):
+        urls = []
+        for code in POSTCODE:
+            urls.append(dict(urls=start_repo(code), code=code))
+        item = 1
+        for data in urls:
+            time.sleep(2)
+            for url in data['urls']:
+                item += 1
+                if item % 20 == 0:
+                    time.sleep(20)
+                yield scrapy.Request(url, callback=self.get_details, meta=dict(postcode=data['code']))
 
     def get_details(self, response):
         practitioner_name = ''
@@ -149,13 +162,13 @@ class CrawlSpider(scrapy.Spider):
 
         profile_url = response.request.url
         l = ItemLoader(item=PhysioItem(), response=response)
-        l.add_value('practitioner_name', practitioner_name)
-        l.add_value('practise_name', practise_name)
-        l.add_value('address', address)
-        l.add_value('phone', phone)
-        l.add_value('fax', fax)
-        l.add_value('email', email.replace('mailto: ', '', 1))
-        l.add_value('web_url', web_url)
-        l.add_value('profile_url', profile_url)
-        l.add_value('postcode_searched', postcode_searched)
+        l.add_value('practitioner_name', self.strip_txt(practitioner_name))
+        l.add_value('practise_name', self.strip_txt(practise_name))
+        l.add_value('address', self.strip_txt(address))
+        l.add_value('phone', self.strip_txt(phone))
+        l.add_value('fax', self.strip_txt(fax))
+        l.add_value('email', self.strip_txt(email.replace('mailto: ', '', 1)))
+        l.add_value('web_url', self.strip_txt(web_url))
+        l.add_value('profile_url', self.strip_txt(profile_url))
+        l.add_value('postcode_searched', self.strip_txt(postcode_searched))
         return l.load_item()
