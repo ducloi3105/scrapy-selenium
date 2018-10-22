@@ -14,9 +14,9 @@ logger.addHandler(fh)
 
 
 URI = "https://www.physiotherapy.asn.au/APAWCM/Controls/FindaPhysio.aspx"
-POSTCODE = ['2000']
+POSTCODE = ['2000','2600']
 # POSTCODE = ['2000','2600','3000','4000','5000','6000','7000','8000']
-RADIUS = '999'
+RADIUS = '1'
 ID_POSTCODE = 'ctl00_TemplateBody_WebPartManager1_gwpste_container_FindaPhysioIPart_ciFindaPhysioIPart_FP1_fpSearch_txtPostCode'
 ID_RADIUS = 'ctl00_TemplateBody_WebPartManager1_gwpste_container_FindaPhysioIPart_ciFindaPhysioIPart_FP1_fpSearch_txtRadius'
 BTN_SUBMIT = '.FPSearchButton input[type="submit"].TextButtonAPA'
@@ -92,13 +92,8 @@ class CrawlSpider(scrapy.Spider):
         urls = []
         for code in POSTCODE:
             urls.append(dict(urls=start_repo(code), code=code))
-        item = 1
         for data in urls:
-            time.sleep(2)
             for url in data['urls']:
-                item += 1
-                if item % 20 == 0:
-                    time.sleep(20)
                 yield scrapy.Request(url, callback=self.get_details, meta=dict(postcode=data['code']))
 
     def get_details(self, response):
